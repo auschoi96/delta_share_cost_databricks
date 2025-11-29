@@ -11,7 +11,7 @@ This solution enables centralized monitoring of Databricks usage, billing, and a
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        PROVIDER WORKSPACES (Multiple Accounts)                   │
+│                        PROVIDER WORKSPACES (Multiple Accounts)                  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  Account A - Workspace 1          Account B - Workspace 1         Account N...  │
 │  ┌─────────────────────────┐     ┌─────────────────────────┐                    │
@@ -21,8 +21,8 @@ This solution enables centralized monitoring of Databricks usage, billing, and a
 │  │  system.lakeflow.*      │     │  system.lakeflow.*      │                    │
 │  │  system.query.history   │     │  system.query.history   │                    │
 │  └───────────┬─────────────┘     └───────────┬─────────────┘                    │
-│              │ DLT Pipeline                   │ DLT Pipeline                     │
-│              ▼                                ▼                                   │
+│              │ DLT Pipeline                   │ DLT Pipeline                    │
+│              ▼                                ▼                                 │
 │  ┌─────────────────────────┐     ┌─────────────────────────┐                    │
 │  │  monitoring_catalog     │     │  monitoring_catalog     │                    │
 │  │  └── workspace_usage    │     │  └── workspace_usage    │                    │
@@ -31,26 +31,26 @@ This solution enables centralized monitoring of Databricks usage, billing, and a
 │  │      ├── jobs_overview  │     │      ├── jobs_overview  │                    │
 │  │      └── activity_*     │     │      └── activity_*     │                    │
 │  └───────────┬─────────────┘     └───────────┬─────────────┘                    │
-│              │ Delta Sharing                  │ Delta Sharing                    │
-└──────────────┼────────────────────────────────┼──────────────────────────────────┘
+│              │ Delta Sharing                  │ Delta Sharing                   │
+└──────────────┼────────────────────────────────┼─────────────────────────────────┘
                │                                │
                ▼                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        RECIPIENT WORKSPACE (Central Hub)                         │
+│                        RECIPIENT WORKSPACE (Central Hub)                        │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  shared_monitoring (catalog from Delta Share)                            │    │
-│  │  ├── account_a_ws1                                                       │    │
-│  │  │   ├── billing_summary                                                 │    │
-│  │  │   ├── cost_by_product                                                 │    │
-│  │  │   └── ...                                                             │    │
-│  │  ├── account_b_ws1                                                       │    │
-│  │  │   ├── billing_summary                                                 │    │
-│  │  │   └── ...                                                             │    │
-│  │  └── consolidated_views                                                  │    │
-│  │      ├── all_workspaces_billing                                          │    │
-│  │      ├── all_workspaces_costs                                            │    │
-│  │      └── cross_account_dashboard                                         │    │
+│  │  shared_monitoring (catalog from Delta Share)                           │    │
+│  │  ├── account_a_ws1                                                      │    │
+│  │  │   ├── billing_summary                                                │    │
+│  │  │   ├── cost_by_product                                                │    │
+│  │  │   └── ...                                                            │    │
+│  │  ├── account_b_ws1                                                      │    │
+│  │  │   ├── billing_summary                                                │    │
+│  │  │   └── ...                                                            │    │
+│  │  └── consolidated_views                                                 │    │
+│  │      ├── all_workspaces_billing                                         │    │
+│  │      ├── all_workspaces_costs                                           │    │
+│  │      └── cross_account_dashboard                                        │    │
 │  └─────────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
