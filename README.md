@@ -34,6 +34,55 @@ Provider Workspaces (Multiple Accounts)          Central Workspace
 | Daily Aggregation Job | Creates weekly/monthly rollups at 2 AM UTC |
 | Delta Sharing Setup Job | One-time job to configure sharing |
 
+### Why Multiple Jobs and a Pipeline?
+
+This solution separates concerns into distinct components:
+
+**DLT Pipeline** - The core data processing engine. It defines *what* tables to create and *how* to transform them. DLT handles:
+- Streaming ingestion from system tables
+- Schema evolution and data quality
+- Dependency management between tables
+- Incremental processing (only new data)
+
+However, DLT pipelines don't run themselves—they need to be triggered.
+
+**Pipeline Refresh Job** - Triggers the DLT pipeline on a schedule (default: every 15 minutes). This separation allows you to:
+- Adjust refresh frequency without modifying the pipeline
+- Monitor job success/failure independently
+- Control costs by changing how often data refreshes
+
+**Daily Aggregation Job** - Runs heavier computations that don't need real-time updates:
+- Weekly/monthly cost rollups for trend analysis
+- Anomaly detection (requires historical context)
+- Top consumers reports
+- Table maintenance (OPTIMIZE)
+
+Running these daily instead of every 15 minutes reduces compute costs and avoids unnecessary processing.
+
+**Delta Sharing Setup Job** - A one-time job to configure sharing. Separated because:
+- Tables must exist before they can be shared
+- Only needs to run once per deployment
+- Requires different permissions than data processing
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Data Flow                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  System Tables ──▶ DLT Pipeline ──▶ Streaming & Aggregated Tables  │
+│                         ▲                       │                   │
+│                         │                       ▼                   │
+│              Pipeline Refresh Job      Daily Aggregation Job        │
+│              (every 15 min)            (2 AM UTC)                   │
+│                                              │                      │
+│                                              ▼                      │
+│                                        Rollup Tables                │
+│                                        Anomaly Detection            │
+│                                        Top Consumers                │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 ## Tables Created
 
 **Billing & Costs**
@@ -105,6 +154,8 @@ databricks-system-tables-sharing/
 ## Documentation
 
 - [QUICKSTART.md](QUICKSTART.md) - Step-by-step deployment guide
+- [SCHEMA.md](./databricks-system-tables-sharing/docs/SCHEMA.md) - Schema details of the materialized views and streaming tables
+- [docs/SCHEMA.md](databricks-system-tables-sharing/docs/SCHEMA.md) - Complete schema reference for all tables
 - [docs/EXTENDING.md](databricks-system-tables-sharing/docs/EXTENDING.md) - How to add new tables
 
 ## Requirements
