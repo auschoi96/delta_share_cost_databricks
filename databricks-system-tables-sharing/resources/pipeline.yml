@@ -1,0 +1,65 @@
+# DLT Pipeline Resource Definition
+# Creates streaming tables and materialized views from system tables
+
+resources:
+  pipelines:
+    # Main monitoring pipeline
+    system_tables_monitoring_pipeline:
+      name: "[${bundle.target}] System Tables Monitoring - ${var.workspace_identifier}"
+      
+      # Unity Catalog target
+      catalog: ${var.monitoring_catalog}
+      target: ${var.monitoring_schema}
+      
+      # Pipeline configuration
+      # Note: development mode adds a dev_<user>_ prefix to schema names which breaks
+      # downstream jobs like daily_aggregations. Set to false for consistent naming.
+      development: false
+      continuous: false  # Triggered mode for cost efficiency
+      
+      # Serverless compute (recommended for system tables monitoring)
+      serverless: true
+      
+      # Pipeline channel
+      channel: PREVIEW
+      
+      # Source notebooks
+      libraries:
+        # Core monitoring (billing, jobs, compute, audit)
+        - notebook:
+            path: ../src/dlt_monitoring_pipeline.py
+        # AI/ML monitoring (model serving, MLflow, vector search)
+        - notebook:
+            path: ../src/dlt_aiml_monitoring.py
+      
+      # Pipeline configuration parameters
+      configuration:
+        # Pass variables to the pipeline
+        "account_identifier": ${var.account_identifier}
+        "workspace_identifier": ${var.workspace_identifier}
+        "monitoring_catalog": ${var.monitoring_catalog}
+        "monitoring_schema": ${var.monitoring_schema}
+        
+        # Enable schema evolution for system tables
+        "pipelines.enableSchemaAdaptation": "true"
+        
+        # Streaming options for system tables
+        "spark.databricks.delta.streaming.skipChangeCommits": "true"
+      
+      # Photon for performance (if not serverless)
+      photon: true
+      
+      # Notifications on failure (customize as needed)
+      notifications:
+        - email_recipients:
+            - ${var.notification_email}
+          alerts:
+            - on-update-failure
+            - on-flow-failure
+
+  # Schema resource for organizing monitoring tables
+  schemas:
+    monitoring_schema:
+      name: ${var.monitoring_schema}
+      catalog_name: ${var.monitoring_catalog}
+      comment: "System tables monitoring data for workspace: ${var.workspace_identifier}"

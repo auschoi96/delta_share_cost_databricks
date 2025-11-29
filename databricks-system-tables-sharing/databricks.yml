@@ -1,0 +1,115 @@
+# Databricks Asset Bundle Configuration
+# System Tables Monitoring & Delta Sharing Solution
+# Deploy to each workspace that needs monitoring
+
+bundle:
+  name: system_tables_monitoring
+
+# Variables for customization per deployment
+variables:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CATALOG & SCHEMA CONFIGURATION
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Catalog where monitoring tables will be created
+  monitoring_catalog:
+    description: "Unity Catalog name for monitoring tables"
+    default: "demo_catalog"
+
+  # Schema for workspace usage data
+  monitoring_schema:
+    description: "Schema name for monitoring tables"
+    default: "demo_data_example"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WORKSPACE & ACCOUNT IDENTIFIERS
+  # These are embedded in every row for cross-workspace analysis
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Account identifier for cross-workspace tracking
+  account_identifier:
+    description: "Friendly name for this account (e.g., 'prod_account_us_east')"
+    default: "default_account"
+
+  # Workspace identifier for cross-workspace tracking
+  workspace_identifier:
+    description: "Friendly name for this workspace (e.g., 'analytics_ws')"
+    default: "default_workspace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # DELTA SHARING CONFIGURATION
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Delta Share name (auto-generated from workspace_identifier if not set)
+  share_name:
+    description: "Name of the Delta Share to create"
+    default: "workspace_monitoring_share"
+
+  # Recipient configuration for Databricks-to-Databricks sharing
+  # Get the sharing ID from recipient workspace: SELECT current_metastore();
+  recipient_sharing_id:
+    description: "Sharing identifier from the recipient/central workspace (leave empty to skip recipient setup)"
+    default: "aws:us-east-2:XXXXXXXXXXXXX"
+
+  recipient_name:
+    description: "Name for the recipient (e.g., 'central_monitoring_workspace'). Use underscores, not hyphens."
+    default: "demo-test"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SCHEDULING & NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Pipeline refresh interval (cron expression)
+  refresh_schedule:
+    description: "Cron schedule for pipeline refresh (Quartz format)"
+    default: "0 */15 * * * ?"  # Every 15 minutes
+
+  # Email for alerts
+  notification_email:
+    description: "Email address for job/pipeline failure notifications"
+    default: "example@email.com"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # OPTIONAL: SERVICE PRINCIPAL FOR PRODUCTION
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  service_principal_name:
+    description: "Service principal for production deployments"
+    default: ""
+
+# Include resource definitions from separate files
+include:
+  - resources/*.yml
+
+# Target environments
+targets:
+  # Development target - for testing
+  # Note: Not using 'mode: development' because it auto-prefixes DLT schema names
+  # with dev_<username>_, breaking consistency with downstream jobs like daily_aggregations
+  dev:
+    default: true
+    variables:
+      monitoring_catalog: "example_demo_catalog"
+      monitoring_schema: "demo_data_example"
+    workspace:
+      root_path: /Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  # Staging target - for validation
+  staging:
+    variables:
+      monitoring_catalog: "staging_monitoring"
+      monitoring_schema: "workspace_usage"
+    workspace:
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
+
+  # Production target - for live deployment
+  prod:
+    mode: production
+    variables:
+      monitoring_catalog: "monitoring"
+      monitoring_schema: "workspace_usage"
+    workspace:
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
+    # Require explicit approval for production deployments
+    run_as:
+      service_principal_name: ${var.service_principal_name}

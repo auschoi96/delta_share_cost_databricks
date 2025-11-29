@@ -1,0 +1,97 @@
+# Job Resource Definition
+# Scheduled job to refresh the monitoring pipeline
+
+resources:
+  jobs:
+    # Scheduled pipeline refresh job
+    monitoring_pipeline_job:
+      name: "[${bundle.target}] System Tables Monitoring Refresh - ${var.workspace_identifier}"
+      
+      # Job description
+      description: |
+        Refreshes the system tables monitoring pipeline on a schedule.
+        This job streams data from Databricks system tables and creates
+        aggregated views for billing, usage, and activity monitoring.
+        
+        Workspace: ${var.workspace_identifier}
+        Account: ${var.account_identifier}
+      
+      # Schedule configuration - run every 15 minutes for near-real-time
+      schedule:
+        quartz_cron_expression: ${var.refresh_schedule}
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+      
+      # Job tasks
+      tasks:
+        # Task 1: Refresh the DLT pipeline
+        - task_key: refresh_monitoring_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.system_tables_monitoring_pipeline.id}
+            full_refresh: false  # Incremental refresh
+          
+          # Retry configuration
+          timeout_seconds: 3600  # 1 hour timeout
+          retry_on_timeout: true
+          max_retries: 2
+      
+      # Notifications
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+        no_alert_for_skipped_runs: true
+      
+      # Tags for organization
+      tags:
+        project: "system-tables-monitoring"
+        workspace: ${var.workspace_identifier}
+        account: ${var.account_identifier}
+        environment: ${bundle.target}
+      
+      # Queue settings
+      queue:
+        enabled: true
+      
+      # Maximum concurrent runs
+      max_concurrent_runs: 1
+
+    # Daily aggregation job (runs less frequently for heavy aggregations)
+    daily_aggregation_job:
+      name: "[${bundle.target}] System Tables Daily Aggregation - ${var.workspace_identifier}"
+      
+      description: |
+        Runs daily aggregations and cleanup tasks for system tables monitoring.
+        Creates daily/weekly/monthly rollup tables for historical analysis.
+      
+      # Run daily at 2 AM UTC
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+      
+      tasks:
+        # Task 1: Run daily aggregation notebook
+        - task_key: daily_aggregations
+          notebook_task:
+            notebook_path: ../src/daily_aggregations.py
+            base_parameters:
+              monitoring_catalog: ${var.monitoring_catalog}
+              monitoring_schema: ${var.monitoring_schema}
+              account_identifier: ${var.account_identifier}
+              workspace_identifier: ${var.workspace_identifier}
+          
+          # Use serverless compute
+          environment_key: default
+          
+          timeout_seconds: 7200  # 2 hour timeout
+      
+      # Environment specification for serverless
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies: []
+      
+      tags:
+        project: "system-tables-monitoring"
+        job_type: "daily-aggregation"

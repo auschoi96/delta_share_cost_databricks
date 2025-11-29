@@ -1,0 +1,137 @@
+# =============================================================================
+# CONFIGURATION TEMPLATE
+# =============================================================================
+# Copy this file to config/my_workspace.yml and customize for your environment.
+# These values can be used with databricks bundle deploy --var-file config/my_workspace.yml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# WORKSPACE IDENTIFICATION
+# -----------------------------------------------------------------------------
+# These identifiers help distinguish data from different workspaces/accounts
+# when aggregated in the central monitoring workspace.
+
+# Friendly name for this Databricks account (e.g., "prod_us", "dev_emea")
+account_identifier: "my_account"
+
+# Friendly name for this workspace (e.g., "analytics", "ml_platform")
+workspace_identifier: "my_workspace"
+
+# -----------------------------------------------------------------------------
+# CATALOG & SCHEMA CONFIGURATION
+# -----------------------------------------------------------------------------
+# Where to create the monitoring tables in Unity Catalog.
+
+# Catalog for monitoring data (will be created if doesn't exist)
+monitoring_catalog: "monitoring"
+
+# Schema for workspace usage tables
+monitoring_schema: "workspace_usage"
+
+# -----------------------------------------------------------------------------
+# DELTA SHARING CONFIGURATION
+# -----------------------------------------------------------------------------
+# Configuration for sharing data with the central monitoring workspace.
+
+# Name of the Delta Share to create
+share_name: "workspace_monitoring_share"
+
+# Sharing identifier of the recipient (central monitoring workspace)
+# Get this from the recipient workspace by running: SELECT current_metastore()
+# Then viewing the metastore details to find the sharing identifier.
+# Format: <cloud>:<region>:<uuid>
+recipient_sharing_identifier: "<cloud>:<region>:<metastore-uuid>"
+
+# Recipient name for the central workspace
+recipient_name: "central_monitoring_workspace"
+
+# -----------------------------------------------------------------------------
+# PIPELINE SCHEDULE CONFIGURATION
+# -----------------------------------------------------------------------------
+# How often to refresh the monitoring data.
+
+# Main pipeline refresh schedule (Quartz cron expression)
+# Default: Every 15 minutes
+refresh_schedule: "0 */15 * * * ?"
+
+# Daily aggregation schedule
+# Default: 2 AM UTC
+daily_schedule: "0 0 2 * * ?"
+
+# -----------------------------------------------------------------------------
+# NOTIFICATION CONFIGURATION
+# -----------------------------------------------------------------------------
+# Email addresses for alerts and notifications.
+
+# Primary notification email
+notification_email: "data-team@company.com"
+
+# Additional emails (comma-separated)
+additional_emails: ""
+
+# -----------------------------------------------------------------------------
+# SERVICE PRINCIPAL (for production deployments)
+# -----------------------------------------------------------------------------
+# Use a service principal for production to avoid dependency on user credentials.
+
+# Service principal name for running pipelines
+service_principal_name: ""
+
+# -----------------------------------------------------------------------------
+# COMPUTE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Compute settings for the pipeline.
+
+# Use serverless compute (recommended)
+use_serverless: true
+
+# If not using serverless, specify cluster configuration
+cluster_node_type: ""
+cluster_min_workers: 1
+cluster_max_workers: 4
+
+# -----------------------------------------------------------------------------
+# DATA RETENTION CONFIGURATION
+# -----------------------------------------------------------------------------
+# How long to retain processed data in the monitoring tables.
+# Note: System tables have their own retention (typically 90-365 days).
+
+# Retention for bronze tables (days)
+bronze_retention_days: 90
+
+# Retention for aggregated tables (days)  
+aggregated_retention_days: 365
+
+# -----------------------------------------------------------------------------
+# FEATURE FLAGS
+# -----------------------------------------------------------------------------
+# Enable/disable specific monitoring features.
+
+# Enable billing/cost tracking
+enable_billing: true
+
+# Enable job monitoring
+enable_jobs: true
+
+# Enable compute/cluster monitoring
+enable_compute: true
+
+# Enable audit log monitoring
+enable_audit: true
+
+# Enable AI/ML monitoring (model serving, MLflow, vector search)
+enable_aiml: true
+
+# Enable query history monitoring
+enable_query_history: true
+
+# -----------------------------------------------------------------------------
+# CUSTOM TAGS
+# -----------------------------------------------------------------------------
+# Custom tags to add to all resources created by this bundle.
+
+tags:
+  project: "system-tables-monitoring"
+  owner: "data-team"
+  cost_center: "platform"
+  environment: "prod"

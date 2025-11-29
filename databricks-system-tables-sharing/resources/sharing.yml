@@ -1,0 +1,65 @@
+# Delta Sharing Setup Job
+#
+# Delta Sharing resources (shares, recipients, grants) are NOT supported
+# as DAB resources. This file defines a job that runs a notebook to
+# programmatically set up Delta Sharing via Spark SQL.
+#
+# IMPORTANT: Tables must exist before they can be added to a share.
+# Run the DLT pipeline at least once before running this job.
+#
+# Deployment order:
+# 1. databricks bundle deploy -t prod  (creates pipeline, jobs, schema)
+# 2. databricks bundle run monitoring_pipeline_job -t prod  (creates tables)
+# 3. databricks bundle run setup_delta_sharing_job -t prod  (sets up sharing)
+
+resources:
+  jobs:
+    # ═══════════════════════════════════════════════════════════════════════════
+    # DELTA SHARING SETUP JOB
+    # Runs a notebook that creates share, adds tables, and configures recipient
+    # ═══════════════════════════════════════════════════════════════════════════
+    setup_delta_sharing_job:
+      name: "[${bundle.target}] Setup Delta Sharing - ${var.workspace_identifier}"
+
+      description: |
+        One-time setup job to configure Delta Sharing for monitoring tables.
+        Run this AFTER the monitoring pipeline has completed at least once.
+        
+        This job:
+        1. Creates the share (if it doesn't exist)
+        2. Adds all monitoring tables to the share
+        3. Creates recipient and grants access (if recipient_sharing_id is configured)
+        
+        Safe to run multiple times - skips tables already in share.
+
+      # No schedule - run manually after pipeline creates tables
+
+      tasks:
+        - task_key: setup_sharing
+          notebook_task:
+            notebook_path: ../src/setup_delta_sharing.py
+            base_parameters:
+              monitoring_catalog: ${var.monitoring_catalog}
+              monitoring_schema: ${var.monitoring_schema}
+              share_name: "${var.workspace_identifier}_monitoring_share"
+              recipient_sharing_id: ${var.recipient_sharing_id}
+              recipient_name: ${var.recipient_name}
+
+          # Use serverless compute
+          environment_key: default
+
+          timeout_seconds: 1800  # 30 min timeout
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies: []
+
+      tags:
+        project: "system-tables-monitoring"
+        job_type: "delta-sharing-setup"
+        workspace: ${var.workspace_identifier}
+
+      # Only allow one run at a time
+      max_concurrent_runs: 1
